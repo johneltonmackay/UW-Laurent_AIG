@@ -1,0 +1,4 @@
+<manifest projecttype="ACCOUNTCUSTOMIZATION">
+  <projectname>AUTO_CLOSE_PO_SCHEDULED</projectname>
+  <frameworkversion>1.0</frameworkversion>
+</manifest>
