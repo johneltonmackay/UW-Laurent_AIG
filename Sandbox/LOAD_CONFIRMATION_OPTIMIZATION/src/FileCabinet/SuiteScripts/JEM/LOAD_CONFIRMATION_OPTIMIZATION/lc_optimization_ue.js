@@ -31,13 +31,15 @@ define(['N/record', 'N/search', 'N/runtime', 'N/file', 'N/render'],
 
         const beforeLoad = (scriptContext) => {
             if (scriptContext.type == 'copy' || scriptContext.type == 'create'){
+                log.debug('beforeLoad executionContext', runtime.executionContext)
                 let objRecord = scriptContext.newRecord
-                setRateToNull(objRecord)
+                // setRateToNull(objRecord)
             }
         }
 
         const beforeSubmit = (scriptContext) => {
             if (scriptContext.type == scriptContext.UserEventType.CREATE || scriptContext.type == scriptContext.UserEventType.EDIT) {
+                log.debug('beforeSubmit executionContext', runtime.executionContext)
                 let objRecord = scriptContext.newRecord
             	setNet30(objRecord)
             	setCommissionAuthId(objRecord)
@@ -46,6 +48,7 @@ define(['N/record', 'N/search', 'N/runtime', 'N/file', 'N/render'],
 
         const afterSubmit = (scriptContext) => {
             log.debug('afterSubmit scriptContext.type', scriptContext.type)
+            log.debug('afterSubmit executionContext', runtime.executionContext)
             let objRecord = scriptContext.newRecord
             let intRecId = objRecord.id
             let strRecType = objRecord.type

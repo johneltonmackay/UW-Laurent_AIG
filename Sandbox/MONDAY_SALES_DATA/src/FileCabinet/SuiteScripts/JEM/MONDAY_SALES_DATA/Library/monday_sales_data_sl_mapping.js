@@ -24,15 +24,22 @@ define([],
                         container: 'custpage_field_group_filter'
                     },
                     PU_LOCATION: {
-                        id: "custpage_pu_location",
+                        id: "custpage_pu_location_head",
                         type: "TEXT",
                         label: "PICK UP LOCATION",
                         container: 'custpage_field_group_filter'
                     },
                     DROP_LOCATION: {
-                        id: "custpage_drop_location",
+                        id: "custpage_drop_location_head",
                         type: "TEXT",
                         label: "DROP LOCATION",
+                        container: 'custpage_field_group_filter'
+                    },
+                    DEPARTMENT: {
+                        id: "custpage_department_head",
+                        type: "SELECT",
+                        label: "DEPARTMENT:",
+                        source: 'department',
                         container: 'custpage_field_group_filter'
                     },
                     SORT_BY: {
@@ -44,21 +51,20 @@ define([],
                             { value: 'internalid', text: 'Record ID' },
                             { value: 'custrecord_customer', text: 'Customer' },
                             { value: 'custrecord_status', text: 'Status' },
+                            { value: 'custrecord_need_call', text: 'Need Call' },
                         ],
                         container: 'custpage_field_group_filter',
                     },
                     LOAD_ORDER: {
-                        id: "custpage_load_order",
-                        type: "MULTISELECT",
+                        id: "custpage_load_order_head",
+                        type: "TEXT",
                         label: "LOAD ORDER",
-                        source: 'salesorder',
                         container: 'custpage_field_group_filter_order'
                     },
                     CUSTOMER_ID: {
                         id: "custpage_customer_id",
-                        type: "SELECT",
+                        type: "TEXT",
                         label: "CUSTOMER",
-                        source: 'customer',
                         container: 'custpage_field_group_filter_order',
                     },
                     CUSTOMER_PO: {
@@ -68,29 +74,27 @@ define([],
                         container: 'custpage_field_group_filter_order'
                     },
                     LOAD_ORDER_STATUS: {
-                        id: "custpage_status",
-                        type: "MULTISELECT",
+                        id: "custpage_status_head",
+                        type: "SELECT",
                         label: "LOAD ORDER STATUS:",
                         source: 'customlist787',
                         container: 'custpage_field_group_filter_order'
                     },
                     LOAD_CONFIRMATION: {
                         id: "custpage_load_confirmation",
-                        type: "MULTISELECT",
+                        type: "TEXT",
                         label: "LOAD CONFIRMATION",
-                        source: 'purchaseorder',
                         container: 'custpage_field_group_filter_confirmation'
                     },
                     VENDOR_ID: {
                         id: "custpage_vendor_id",
-                        type: "SELECT",
+                        type: "TEXT",
                         label: "VENDOR",
-                        source: 'vendor',
                         container: 'custpage_field_group_filter_confirmation',
                     },
                     LOAD_CONFIRMATION_STATUS: {
                         id: "custpage_status_lc",
-                        type: "MULTISELECT",
+                        type: "SELECT",
                         label: "LOAD CONFIRMATION STATUS:",
                         source: 'customlist786',
                         container: 'custpage_field_group_filter_confirmation'
@@ -121,6 +125,13 @@ define([],
                         isEdit: false,
                         isHidden: true
                     },
+                    LOAD_ORDER_ID: {
+                        id: "custpage_load_order_id",
+                        label: "LOAD ORDER ID",
+                        type: 'text',
+                        isEdit: false,
+                        isHidden: true
+                    },
                     ADD_SUB_REC: {
                         id: "custpage_chk_add_sub_rec",
                         label: "ADD SUB RECORD",
@@ -130,10 +141,24 @@ define([],
                     },
                     VIEW_SUB_REC: {
                         id: "custpage_view_sub_rec",
-                        label: "View Sub Record",
+                        label: "Sub Record",
                         type: "TEXTAREA",
                         isEdit: false,
                         isHidden: false
+                    },
+                    VIEW_NOTES_REC: {
+                        id: "custpage_view_notes_rec",
+                        label: "NOTES",
+                        type: "TEXTAREA",
+                        isEdit: false,
+                        isHidden: false
+                    },
+                    NEED_CALL: {
+                        id: "custpage_need_call",
+                        label: "NEED CALL?",
+                        type: 'checkbox',
+                        isEdit: true,
+                        isHidden: false,
                     },
                     CUSTOMER_NAME: {
                         id: "custpage_customer",
@@ -142,6 +167,7 @@ define([],
                         isEdit: false,
                         isHidden: false,
                         source: 'customer',
+                        isInLine: true,
                     },
                     PU_LOCATION: {
                         id: "custpage_pu_location",
@@ -175,7 +201,7 @@ define([],
                         id: "custpage_amount",
                         label: "AMOUNT",
                         type: "text",
-                        isEdit: true,
+                        isEdit: false,
                         isHidden: false
                     },
                     TARGET_RATE: {
@@ -186,14 +212,14 @@ define([],
                         isHidden: false
                     },
                     COMMODITY: {
-                        id: "custpage_commodity",
+                        id: "custpage_load_detailsgeorge",
                         label: "COMMODITY",
                         type: "text",
                         isEdit: true,
                         isHidden: false
                     },
                     CUSTOMER_PO_NUMBER: {
-                        id: "custpage_po_number",
+                        id: "custpage_customer_po_numbers",
                         label: "CUSTOMER PO",
                         type: "text",
                         isEdit: true,
@@ -241,29 +267,47 @@ define([],
                         type: "text",
                         isHidden: false
                     },
-                    TENDER_FILE: {
-                        id: "custpage_tender_files",
-                        label: "TENDER FILES",
+                    FILE_CABINET_ID: {
+                        id: "custpage_file_cabinet_id",
+                        label: "FILE CABINET ID",
                         type: "text",
                         isHidden: true
                     },
-                    TENDER_FILE_URL: {
-                        id: "custpage_tender_files_url",
-                        label: "TENDER FILES URL",
+                    SO_TRAN_ID: {
+                        id: "custpage_tran_id",
+                        label: "SO TRAN ID",
                         type: "text",
                         isHidden: true
                     },
-                    OTHER_FILE: {
-                        id: "custpage_other_files",
-                        label: "OTHER FILES",
+                    DEPARTMENT: {
+                        id: "custpage_department",
+                        label: "DEPARTMENT",
                         type: "text",
                         isHidden: true
                     },
-                    TENDER_FILE_URL: {
-                        id: "custpage_other_files_url",
-                        label: "OTHER FILES URL",
+                    LENGTH_IN_FEET: {
+                        id: "custpage_lenght_feet",
+                        label: "LENGTH IN FEET",
                         type: "text",
-                        isHidden: true
+                        isHidden: true,
+                    },
+                    WIDTH_IN_FEET: {
+                        id: "custpage_width_feet",
+                        label: "WIDTH IN FEET",
+                        type: "text",
+                        isHidden: true,
+                    },
+                    HEIGHT_IN_FEET: {
+                        id: "custpage_height_feet",
+                        label: "HEIGHT IN FEET",
+                        type: "text",
+                        isHidden: true,
+                    },
+                    WEIGHT: {
+                        id: "custpage_load_weight",
+                        label: "WEIGHT",
+                        type: 'text',
+                        isHidden: true,
                     },
                     
                 },
@@ -272,7 +316,14 @@ define([],
                         id: "custpage_rec_id",
                         label: "RECORD ID",
                         type: 'text',
-                        isEdit: false
+                        isEdit: false,
+                        isHidden: true
+                    },
+                    PO_TRAN_ID: {
+                        id: "custpage_po_tran_id",
+                        label: "PO TRAN ID",
+                        type: "text",
+                        isHidden: true
                     },
                     DOCUMENT_NUMBER: {
                         id: "custpage_doc_num",
@@ -280,16 +331,28 @@ define([],
                         type: 'text',
                         isEdit: false,
                     },
-                    DATE: {
-                        id: "custpage_date",
+                    COMPANY_NAME: {
+                        id: "custpage_company_name",
+                        label: "COMPANY NAME",
+                        type: "text",
+                        isEdit: false
+                    },
+                    TRAN_DATE: {
+                        id: "custpage_trans_date",
                         label: "DATE",
                         type: 'text',
                         isEdit: false
                     },
-                    NAME: {
-                        id: "custpage_name",
-                        label: "NAME",
-                        type: "text",
+                    PU_DATE: {
+                        id: "custpage_pu_date",
+                        label: "PU DATE",
+                        type: 'text',
+                        isEdit: false
+                    },
+                    DROP_DATE: {
+                        id: "custpage_drop_date",
+                        label: "DROP DATE",
+                        type: 'text',
                         isEdit: false
                     },
                     MEMO: {
@@ -307,125 +370,15 @@ define([],
                     ORDER_STATUS: {
                         id: "custpage_order_status",
                         label: "ORDER STATUS",
-                        type: "text",
-                        isEdit: false
+                        type: "select",
+                        isEdit: true,
+                        source: 'customlist786',
+                        isHidden: false
                     },
                     PICK_UP_LOCATION: {
                         id: "custpage_pu_location",
                         label: "PICK UP LOCATION",
                         type: "TEXTAREA",
-                        isEdit: false
-                    },
-                },
-                sublistfields3rd: {
-                    RECORD_ID: {
-                        id: "custpage_rec_id",
-                        label: "RECORD ID",
-                        type: 'text',
-                        isEdit: false
-                    },
-                    DOCUMENT_NUMBER: {
-                        id: "custpage_doc_num",
-                        label: "Conf #",
-                        type: 'text',
-                        isEdit: false,
-                    },
-                    VENDOR: {
-                        id: "custpage_vendor",
-                        label: "Vendor",
-                        type: 'text',
-                        isEdit: false
-                    },
-                    STATUS: {
-                        id: "custpage_status",
-                        label: "Status",
-                        type: "text",
-                        isEdit: false
-                    },
-                    ETA: {
-                        id: "custpage_eta",
-                        label: "ETA",
-                        type: "text",
-                        isEdit: false
-                    },
-                    DEL_DATE: {
-                        id: "custpage_del_date",
-                        label: "DEL Date",
-                        type: "text",
-                        isEdit: false
-                    },
-                    PU_CITY: {
-                        id: "custpage_pu_city",
-                        label: "PU City",
-                        type: "text",
-                        isEdit: false
-                    },
-                    DROP_LOCATION: {
-                        id: "custpage_drop_location",
-                        label: "DROP LOCATION",
-                        type: "text",
-                        isEdit: false
-                    },
-                    CREATED_FROM: {
-                        id: "custpage_created_from",
-                        label: "CREATED FROM",
-                        type: "TEXTAREA",
-                        isEdit: false
-                    },
-                    CUSTOMER: {
-                        id: "custpage_customer",
-                        label: "CUSTOMER",
-                        type: "text",
-                        isEdit: false
-                    },
-                },
-                sublistfields4th: {
-                    RECORD_ID: {
-                        id: "custpage_rec_id",
-                        label: "RECORD ID",
-                        type: 'text',
-                        isEdit: false
-                    },
-                    DOCUMENT_NUMBER: {
-                        id: "custpage_doc_num",
-                        label: "Conf #",
-                        type: 'text',
-                        isEdit: false,
-                    },
-                    VENDOR: {
-                        id: "custpage_vendor",
-                        label: "Vendor",
-                        type: 'text',
-                        isEdit: false
-                    },
-                    ORDER_STATUS: {
-                        id: "custpage_order_status",
-                        label: "Status",
-                        type: "text",
-                        isEdit: false
-                    },
-                    ETA: {
-                        id: "custpage_eta",
-                        label: "ETA",
-                        type: "text",
-                        isEdit: false
-                    },
-                    PU_DATE: {
-                        id: "custpage_pu_date",
-                        label: "DEL Date",
-                        type: "text",
-                        isEdit: false
-                    },
-                    PU_CITY: {
-                        id: "custpage_pu_city",
-                        label: "PU City",
-                        type: "text",
-                        isEdit: false
-                    },
-                    DROP_LOCATION: {
-                        id: "custpage_drop_location",
-                        label: "DROP LOCATION",
-                        type: "text",
                         isEdit: false
                     },
                 },

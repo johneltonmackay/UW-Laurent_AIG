@@ -16,6 +16,23 @@ define(['N/record', 'N/search'],
          * @param {string} scriptContext.type - Trigger type; use values from the context.UserEventType enum
          * @since 2015.2
          */
+
+        const beforeLoad = (scriptContext) => {
+            let arrFieldIds = ['custbody_commission_auth_id', 'custbody_monday_sales_data_id', 'custbody_commission_amount', 'custbody_profit',  ];
+            
+            if (scriptContext.type === scriptContext.UserEventType.COPY || scriptContext.type === scriptContext.UserEventType.CREATE) { 
+                const objRec = scriptContext.newRecord;
+                
+                arrFieldIds.forEach((fieldId) => {
+                    objRec.setValue({
+                        fieldId: fieldId,
+                        value: null
+                    });
+                });
+            }
+        };
+        
+
         const afterSubmit = (scriptContext) => {
             log.debug('afterSubmit scriptContext.type', scriptContext.type)
             try {
@@ -42,10 +59,20 @@ define(['N/record', 'N/search'],
 
                     if (arrSOData.length > 0){
                         let intMSDId = createCustomRecord(arrSOData)
+
                         objCurrentRecord.setValue({
                             fieldId: 'custbody_monday_sales_data_id',
                             value: intMSDId
                         })
+
+                        if (scriptContext.type === scriptContext.UserEventType.CREATE || scriptContext.type === scriptContext.UserEventType.COPY ){
+                            let folderId = createFolder(arrSOData[0])
+
+                            objCurrentRecord.setValue({
+                                fieldId: 'custbody_file_cabinet_id',
+                                value: folderId
+                            })
+                        }
                         
                         let recordId = objCurrentRecord.save({
                             enableSourcing: true,
@@ -53,6 +80,7 @@ define(['N/record', 'N/search'],
                         })
                         log.debug('afterSubmit recordId', recordId)
                     }
+
                     
                     log.debug('afterSubmit arrSOData', arrSOData)
                 }
@@ -96,12 +124,45 @@ define(['N/record', 'N/search'],
             return customRecId
         }
 
+        const createFolder = (options) => {
+            let folderRecId = null
+            try {
+                if (options.tranid){
+                    let objRecData = record.create({
+                        type: 'folder',
+                        isDynamic: true
+                    })
+                    if (objRecData){
+                        objRecData.setValue({
+                            fieldId: 'name',
+                            value: options.tranid
+                        });
+
+                        objRecData.setValue({
+                            fieldId: 'parent',
+                            value: 123177 // AIG FILES > Sales Order Documents
+                        });
+                        
+                        folderRecId = objRecData.save({
+                            enableSourcing: true,
+                            ignoreMandatoryFields: true
+                        })
+                        log.debug('createFolder recordId', folderRecId) 
+                    }
+                }
+            } catch (error) {
+                log.error('folderRecId error', error.message)
+            }
+            return folderRecId
+        }
+
         const fieldMapping = (options) => {
             let fldID = null
             let objMSDFields = {
                 entity : 'custrecord_customer',
                 custbody_customer_po_numbers : 'custrecord_po_number',
-                // custrecord_amount: custrecord_amount,
+                custbody_load_detailsgeorge: 'custrecord_load_detailsgeorge',
+                total: 'custrecord_amount',
                 custbody_pu_location : 'custrecord_pu_location',
                 custbody_drop_location : 'custrecord_drop_location',
                 // custrecord_commodity: custrecord_commodity,
@@ -119,6 +180,7 @@ define(['N/record', 'N/search'],
                 // custrecord_notes: custrecord_notes,
                 // custrecord_other_files: custrecord_other_files,
                 // custrecord_other_files_url: custrecord_other_files_url
+                
             }
 
             if (options){
@@ -140,14 +202,18 @@ define(['N/record', 'N/search'],
                 'custbody_pu_location',
                 'custbody_drop_location',
                 'id',
+                'tranid',
                 'custbody10',
                 'custbody_tenderattachment',
                 'custbody22',
+                'custbody_load_detailsgeorge',
+                'total'
+
             ]
 
             return arrFieldIds
         }
 
-        return {afterSubmit}
+        return {beforeLoad, afterSubmit}
 
     });

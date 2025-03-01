@@ -58,14 +58,19 @@ define([],
                         label: "DROP TIMELINE",
                         type: "text",
                     },
+                    COMMODITY: {
+                        id: "custpage_load_detailsgeorge",
+                        label: "COMMODITY",
+                        type: "text",
+                    },
                     UPDATE: {
                         id: "custpage_update",
                         label: "UPDATE",
                         type: "text",
                     },
-                    PO_NUMER: {
+                    PO_NUMBER: {
                         id: "custpage_po_number",
-                        label: "PO NUMER",
+                        label: "PO NUMBER",
                         type: "text",
                     },
                     APPOINTMENT: {
@@ -87,6 +92,7 @@ define([],
                         id: "custpage_so_data",
                         label: "SO DATA",
                         type: "longtext",
+                        isHidden: true
                     },
                     NOTES: {
                         id: "custpage_notes",

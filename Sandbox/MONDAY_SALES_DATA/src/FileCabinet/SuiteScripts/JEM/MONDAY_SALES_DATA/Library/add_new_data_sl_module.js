@@ -121,7 +121,7 @@ define(["N/ui/serverWidget", "N/search", "N/task", "N/file", "N/record", "../Lib
                         });
                     }
 
-                    if (slMapping.SUITELET.form.fields[strKey].ishidden) {
+                    if (slMapping.SUITELET.form.fields[strKey].isHidden) {
                         objField.updateDisplayType({
                             displayType: serverWidget.FieldDisplayType.HIDDEN
                         });
@@ -153,6 +153,7 @@ define(["N/ui/serverWidget", "N/search", "N/task", "N/file", "N/record", "../Lib
         
         const createCustomRecord = (options) => {
             let customRecId = null
+            let arrSOLineData = []
             try {
                 let arrParamData = options.postParam
                 if (arrParamData.length > 0){
@@ -162,13 +163,25 @@ define(["N/ui/serverWidget", "N/search", "N/task", "N/file", "N/record", "../Lib
                     })
                     if (objRecData){
                         arrParamData.forEach(data => {
+                            let intTotalAmount = 0
                             for (const key in data) {
                                 let fieldIds = key.replace('custpage', 'custrecord')
                                 let fieldValue = data[key]
-                                objRecData.setValue({
-                                    fieldId: fieldIds,
-                                    value: fieldValue
-                                }) 
+                                if (key == 'custpage_so_data'){
+                                    arrSOLineData = JSON.parse(data[key])
+                                    arrSOLineData.forEach(data => {
+                                        intTotalAmount += parseInt(data.custpage_amount)
+                                    });
+                                    objRecData.setValue({
+                                        fieldId: 'custrecord_amount',
+                                        value: intTotalAmount
+                                    }) 
+                                } else {
+                                    objRecData.setValue({
+                                        fieldId: fieldIds,
+                                        value: fieldValue
+                                    }) 
+                                }
                             }
                         });
                         customRecId = objRecData.save({
@@ -192,6 +205,7 @@ define(["N/ui/serverWidget", "N/search", "N/task", "N/file", "N/record", "../Lib
                 let strCustomer = null
                 let strPONum = null
                 let strStatus = null
+                let strLoadDetails = null
                 let arrSOLineData = []
                 if (arrParamData.length > 0){
                     arrParamData.forEach(data => {
@@ -205,7 +219,9 @@ define(["N/ui/serverWidget", "N/search", "N/task", "N/file", "N/record", "../Lib
                             } else if (key == 'custpage_so_data'){
                                 arrSOLineData = JSON.parse(data[key])
                                 log.debug('createSO arrSOLineData', arrSOLineData)
-                            }
+                            } else if (key == 'custpage_load_detailsgeorge'){
+                                strLoadDetails = data[key]
+                            } 
                         }
                     });
 
@@ -220,7 +236,8 @@ define(["N/ui/serverWidget", "N/search", "N/task", "N/file", "N/record", "../Lib
                             otherrefnum: strPONum ? strPONum :null,
                             custbody10: strStatus ? strStatus : null,
                             department: arrEmpDepartment[0] ? arrEmpDepartment[0] : null,
-                            custbody_monday_sales_data_id: customRecId ? customRecId : null
+                            custbody_monday_sales_data_id: customRecId ? customRecId : null,
+                            custbody_load_detailsgeorge: strLoadDetails ? strLoadDetails : null
                         }
                         for (let key in objSalesParam) {
                             if (objSalesParam.hasOwnProperty(key)) {

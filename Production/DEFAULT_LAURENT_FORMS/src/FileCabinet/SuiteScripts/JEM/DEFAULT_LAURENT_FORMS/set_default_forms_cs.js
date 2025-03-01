@@ -22,6 +22,7 @@ function(currentRecord, runtime, dialog, message) {
 
     const ISLAURENT = 3672
     const ISJOHN = 8126
+    const ISADRIAN = 3670
 
     const CUSTOMER_AM_NS_PRESOURCE = 3450
     const SAVED_LOCATION_AM_NS = 201
@@ -103,6 +104,12 @@ function(currentRecord, runtime, dialog, message) {
             } catch (e) {
                 log.error('Error setting form', e.message);
             }
+        } else {
+            if (intEntity == NUCOR_LOGISTICS_CENTER & recType == 'salesorder'){
+                isFieldsDisplay(newRecord, null, true)
+            } else {
+                isFieldsDisplay(newRecord, null, false)
+            }
         }
     }
 
@@ -114,33 +121,92 @@ function(currentRecord, runtime, dialog, message) {
         if (scriptContext.fieldId == 'entity' && recType == 'salesorder'){
             let intEntity = newRecord.getValue({ fieldId: 'entity' });
             if (intEntity == NUCOR_LOGISTICS_CENTER) {
-                isFieldsDisplay(newRecord, true)
+                isFieldsDisplay(newRecord, true, true)
             } else {
+                // if (currentUser.id == ISJOHN){
                 if (currentUser.id != ISLAURENT){
-                    isFieldsDisplay(newRecord, false)
+                    if (currentUser.id == ISADRIAN){
+                        isFieldsDisplay(newRecord, true, false)
+                    } else {
+                        isFieldsDisplay(newRecord, false, false)
+                    }
                 } else {
-                    isFieldsDisplay(newRecord, true)
+                    isFieldsDisplay(newRecord, true, false)
                 }
             }
         }
+
+        if (scriptContext.fieldId == 'custpage_driver_instructions' && recType == 'purchaseorder'){
+            let strDriverInstruction = newRecord.getValue({ fieldId: 'custpage_driver_instructions' });
+            if (strDriverInstruction){
+                newRecord.setValue({ 
+                    fieldId: 'custbody_driver_instructions',
+                    value: strDriverInstruction
+                 })
+            }
+
+        }
+    }
+
+    function saveRecord(scriptContext) {
+        let currentRecord = scriptContext.currentRecord;
+        let recType = currentRecord.type
+
+        let intDSM = currentRecord.getValue({ fieldId: 'custbody_dsm' });
+
+        if (intDSM) {
+            let duplicateSearch = search.create({
+                type: recType,
+                filters: [
+                    ['custbody_dsm', 'is', intDSM]
+                ],
+                columns: ['internalid']
+            });
+
+            let searchResult = duplicateSearch.run().getRange({ start: 0, end: 1 });
+
+            if (searchResult.length > 0) {
+                dialog.alert({
+                    title: 'Duplicate Found',
+                    message: `A ${recType} with this DSM already exists. DSM must be unique.`
+                });
+
+                return false; // Prevent saving the record
+            }
+        }
+
+        return true; // Allow saving if no duplicate is found
     }
 
     // Private Function
 
-    function isFieldsDisplay(currentRecord, blnValue) {
+    function isFieldsDisplay(currentRecord, blnValue, isNuCor) {
         // log.debug('blnValue', blnValue);
         // List of fields to unhide
+
+        let arrFldAffected = []
         var fieldsToShow = [
             'custbody_saved_locations', 'custbody_locations_public_notes', 'custbody_locations_private_notes',
-            'custbody_saved_locations_2', 'custbody_public_notes_drop', 'custbody_private_notes_drop'
+            'custbody_saved_locations_2', 'custbody_public_notes_drop', 'custbody_private_notes_drop', 'custbody_dsm'
         ];
-        
+
         fieldsToShow.forEach(function(field) {
             try {
                 let strField = currentRecord.getField({ fieldId: field })
-                strField.isDisplay = blnValue;
-                strField.isVisible = blnValue
-                log.debug('strField', strField);
+
+                if (field == 'custbody_dsm'){
+                    strField.isDisplay = isNuCor;
+                    strField.isVisible = isNuCor
+                } else {
+                    if (blnValue != null){
+                        strField.isDisplay = blnValue;
+                        strField.isVisible = blnValue
+                        arrFldAffected.push({
+                            fld: field,
+                            bln: blnValue
+                        })
+                    }
+                }
             } catch (e) {
                 log.error('Field Error', e.message);
             }
@@ -151,12 +217,16 @@ function(currentRecord, runtime, dialog, message) {
             message: 'Some fields have been successfully hidden or made visible.',
             type: message.Type.CONFIRMATION
         }).show({ duration: 5000 });
+
+        console.log('arrFldAffected', arrFldAffected);
+
     }
 
 
     return {
         pageInit: pageInit,
-        fieldChanged: fieldChanged
+        fieldChanged: fieldChanged,
+        saveRecord: saveRecord
 
     };
     

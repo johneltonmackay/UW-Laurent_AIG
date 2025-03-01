@@ -18,7 +18,7 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js'], (c
         var sublistName = scriptContext.sublistId;
         var op = scriptContext.operation;
         if (sublistName === 'custpage_sublist') {
-            let arrSOData = getSublistData()
+            let arrSOData = getSublistData(sublistName)
             if (arrSOData.length > 0){
                 currentRecord.setValue({
                     fieldId: 'custpage_so_data',
@@ -28,18 +28,18 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js'], (c
         }
     }
 
-    const getSublistData = (scriptContext) => {
+    const getSublistData = (sublistName) => {
         let arrSOData = [];
         try {         
             let currRec = currentRecord.get()
-            let lineCount = currRec.getLineCount({ sublistId: 'custpage_sublist' });
+            let lineCount = currRec.getLineCount({ sublistId: sublistName });
             if(lineCount > 0){
                 for (let i = 0; i < lineCount; i++) {
                     let objData = {}
                     for (var strKey in slMapping.SUITELET.form.sublistfields) {
                         let fieldInfo = slMapping.SUITELET.form.sublistfields[strKey];
                         let fieldValue = currRec.getSublistValue({
-                            sublistId: 'custpage_sublist',
+                            sublistId: sublistName,
                             fieldId: fieldInfo.id,
                             line: i
                         });

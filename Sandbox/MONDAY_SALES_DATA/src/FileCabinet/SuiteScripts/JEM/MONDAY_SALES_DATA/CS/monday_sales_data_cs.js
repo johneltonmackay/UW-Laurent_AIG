@@ -9,32 +9,47 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
     // Function to initialize the page
     const pageInit = (scriptContext) => {
         try {
+
             console.log('Test Page Fully Loaded!', scriptContext);
+            // **Ensure NetSuite has rendered dropdowns before running the function**
+            setTimeout(applyRowColor, 200);
 
             let objCurrentRecord = scriptContext.currentRecord;
+            let objForm = objCurrentRecord.form
             let urlParams = new URLSearchParams(window.location.search);
             let dataParam = urlParams.get('filterParam');
+            let isCloseWindow = urlParams.get('closeWindow');
+            let isUpdates = urlParams.get('updates');
+            console.log('isUpdates', isUpdates);
+            
             let arrjsonData = JSON.parse(dataParam);
-            console.log('arrjsonData', arrjsonData);
-            if (arrjsonData) {
-                arrjsonData.forEach(data => {
-                    for (let key in data) {
-                        if(key == 'custpage_active_tab'){
+            if (isCloseWindow) {
+                if (window.opener) {
+                    window.opener.location.reload();
+                }
+                window.close();
+            } else {
+                if (arrjsonData) {
+                    arrjsonData.forEach(data => {
+                        for (let key in data) {
+                            if(key == 'custpage_active_tab'){
+                                let value = data[key];
+                                activateTab(value)
+                            }
+    
                             let value = data[key];
-                            activateTab(value)
+                            console.log('key:', key, 'value:', value);
+                            objCurrentRecord.setValue({
+                                fieldId: key,
+                                value: value,
+                                ignoreFieldChange: true,
+                                fireSlavingSync: true
+                            });
                         }
-
-                        let value = data[key];
-                        console.log('key:', key, 'value:', value);
-                        objCurrentRecord.setValue({
-                            fieldId: key,
-                            value: value,
-                            ignoreFieldChange: true,
-                            fireSlavingSync: true
-                        });
-                    }
-                })
+                    })
+                }
             }
+
         } catch (error) {
             console.log('Error in pageInit:', error.message);
         }
@@ -42,6 +57,7 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
 
     const fieldChanged = (scriptContext) => {
         try {
+          
             let arrSubListFieldChanging = []
             let arrBodyFieldChanging = []
             for (var strKey in mondayMapping.SUITELET.form.sublistfields) {
@@ -62,20 +78,73 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
                 getCurrentActiveTab(objCurrRecord);
                 var currIndex = scriptContext.line
                 console.log('fieldChanged currIndex', currIndex)
-                if (currIndex){
+                if (currIndex >= 0){
                     let customRecordId = objCurrRecord.getSublistValue({
                         sublistId: 'custpage_sublist',
                         fieldId: 'custpage_name',
                         line: currIndex
                     });
                     console.log('fieldChanged customRecordId', customRecordId)
-                    if (customRecordId){
+                    let loadOrderId = objCurrRecord.getSublistValue({
+                        sublistId: 'custpage_sublist',
+                        fieldId: 'custpage_load_order_id',
+                        line: currIndex
+                    });
+                    console.log('fieldChanged loadOrderId', loadOrderId)
+
+                    if (customRecordId && loadOrderId){
+
+                        let objField = objCurrRecord.getSublistField({
+                            sublistId: 'custpage_sublist',
+                            fieldId: scriptContext.fieldId,
+                            line: currIndex
+                        });
+
+                        let fieldLabel = objField ? objField.label : null;
+                        
                         let cusRecFieldId = scriptContext.fieldId.replace('custpage', 'custrecord')
-                        var sublistValue = objCurrRecord.getCurrentSublistValue({
+
+                        sublistValue = objCurrRecord.getCurrentSublistValue({
                             sublistId: 'custpage_sublist',
                             fieldId: scriptContext.fieldId
+                        }); 
+                        
+                        let sublistText = ""
+
+                        if (scriptContext.fieldId == 'custpage_status' ){
+                            sublistText = objCurrRecord.getCurrentSublistText({
+                                sublistId: 'custpage_sublist',
+                                fieldId: scriptContext.fieldId
+                            });
+                        } else {
+                            sublistText = objCurrRecord.getCurrentSublistValue({
+                                sublistId: 'custpage_sublist',
+                                fieldId: scriptContext.fieldId
+                            });
+                        }
+
+                        
+
+                        console.log('fieldChanged cusRecFieldId', cusRecFieldId)
+                        console.log('fieldChanged sublistValue', sublistValue)
+
+                        var strTranId = objCurrRecord.getCurrentSublistValue({
+                            sublistId: 'custpage_sublist',
+                            fieldId: 'custpage_tran_id'
                         });
-                        let recId = record.submitFields.promise({
+
+                        let myMsg = message.create({
+                            title: `Field Updated: ${fieldLabel} to ${sublistText} `,
+                            message: `The record ${strTranId} has been updated. Please wait while the page refreshes.`,
+                            type: message.Type.INFORMATION
+                        });
+                        
+                        myMsg.show({
+                            duration: 2500
+                        });
+
+
+                        record.submitFields.promise({
                             type: 'customrecord_my_sales_data',
                             id: customRecordId,
                             values: {
@@ -83,10 +152,34 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
                             },
                             options: {
                                 enableSourcing: true,
-                                ignoreMandatoryFields : true
+                                ignoreMandatoryFields: true
                             }
-                        })
-                        console.log('fieldChanged recId', cusRecFieldId + ' ' + recId)
+                        }).then(() => {
+
+                            let loadOrderFieldId = scriptContext.fieldId.startsWith('custpage_status')
+                            ? scriptContext.fieldId.replace('custpage_status', 'custbody10')
+                            : scriptContext.fieldId.replace('custpage', 'custbody');
+
+                            return record.submitFields.promise({
+                                type: 'salesorder',
+                                id: loadOrderId,
+                                values: {
+                                    [loadOrderFieldId]: sublistValue
+                                },
+                                options: {
+                                    enableSourcing: true,
+                                    ignoreMandatoryFields: true
+                                }
+                            });
+                        }).then(() => {
+                            console.log('Both records updated successfully');
+                            window.onbeforeunload = null;
+                            searchItems()
+                        }).catch((error) => {
+                            console.error('Error updating records:', error);
+                        });
+
+                        console.log('fieldChanged recId', cusRecFieldId)
                     }
                 }
             }
@@ -96,7 +189,88 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
                 searchItems()
             }
 
+            if (scriptContext.fieldId == 'custpage_order_status'){
+                getCurrentActiveTab(objCurrRecord);
+                var currIndex = scriptContext.line
+                console.log('fieldChanged currIndex', currIndex)
+                if (currIndex >= 0){
+                    let poRecordId = objCurrRecord.getSublistValue({
+                        sublistId: 'custpage_sublist2',
+                        fieldId: 'custpage_rec_id',
+                        line: currIndex
+                    });
+                    console.log('fieldChanged poRecordId', poRecordId)
+                    
+                    if (poRecordId){
 
+                        let objField = objCurrRecord.getSublistField({
+                            sublistId: 'custpage_sublist2',
+                            fieldId: scriptContext.fieldId,
+                            line: currIndex
+                        });
+
+                        let fieldLabel = objField ? objField.label : null;
+                        
+                        let poFieldId = scriptContext.fieldId.replace('custpage_order_status', 'custbody4')
+
+                        
+                        var sublistValue = objCurrRecord.getSublistValue({
+                            sublistId: 'custpage_sublist2',
+                            fieldId: scriptContext.fieldId,
+                            line: currIndex
+
+                        });
+
+                        var sublistText = objCurrRecord.getSublistText({
+                            sublistId: 'custpage_sublist2',
+                            fieldId: scriptContext.fieldId,
+                            line: currIndex
+
+                        });
+                        console.log('fieldChanged poFieldId', poFieldId)
+                        console.log('fieldChanged sublistValue', sublistValue)
+
+                        let strTranId = objCurrRecord.getSublistValue({
+                            sublistId: 'custpage_sublist2',
+                            fieldId: 'custpage_po_tran_id',
+                            line: currIndex
+                        });
+
+                        console.log('fieldChanged strTranId', strTranId)
+
+
+                        let myMsg = message.create({
+                            title: `Field Updated: ${fieldLabel} to ${sublistText} `,
+                            message: `The record ${strTranId} has been updated. Please wait while the page refreshes.`,
+                            type: message.Type.INFORMATION
+                        });
+
+                        myMsg.show({
+                            duration: 2500
+                        });
+
+                        record.submitFields.promise({
+                            type: 'purchaseorder',
+                            id: poRecordId,
+                            values: {
+                                [poFieldId]: sublistValue
+                            },
+                            options: {
+                                enableSourcing: true,
+                                ignoreMandatoryFields: true
+                            }
+                        }).then(() => {
+                            console.log('Records updated successfully');
+                            window.onbeforeunload = null;
+                            searchItems()
+                        }).catch((error) => {
+                            console.error('Error updating records:', error);
+                        });
+
+                        console.log('fieldChanged poFieldId', poFieldId)
+                    }
+                }
+            }
 
         } catch (error) {
             console.log('Error in fieldChanged:', error.message);
@@ -104,20 +278,13 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
 
     }
 
-    const addNewSalesData = (scriptContext) => {
-        let currRec = currentRecord.get()
-        console.log('addNewSalesData currRec', currRec)
+    const addNewSalesData = () => {
         try {
-            var sURL = url.resolveScript({
-                scriptId : slMapping.SUITELET.scriptid,
-                deploymentId : slMapping.SUITELET.deploymentid,
-                returnExternalUrl : false,
-            });
-        
+            let sURL = `/app/accounting/transactions/salesord.nl`;
             window.onbeforeunload = null;
-            window.location = sURL;
+            window.open(sURL, '_blank'); // Opens in a new tab
         } catch (error) {
-            console.log('Error: addNewSalesData', error.message)
+            console.log('Error: addNewSalesData', error.message);
         }
     }
 
@@ -159,13 +326,14 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
             let blnisValid = false
 
             if (
-                arrParameter[0].custpage_drop_location || 
-                arrParameter[0].custpage_pu_location || 
+                arrParameter[0].custpage_department_head || 
+                arrParameter[0].custpage_drop_location_head || 
+                arrParameter[0].custpage_pu_location_head || 
                 arrParameter[0].custpage_customer_po || 
                 arrParameter[0].custpage_customer_id ||
                 arrParameter[0].custpage_sortby ||
-                (arrParameter[0].custpage_load_order[0] !== "" ||
-                arrParameter[0].custpage_status[0] !== "" 
+                (arrParameter[0].custpage_load_order_head !== "" ||
+                arrParameter[0].custpage_status_head !== "" 
                 )
             ) {
                 blnisValid = true;
@@ -276,7 +444,10 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
         const tabElement = document.querySelector(`#${tabId} a`) || document.getElementById(tabId);
         if (tabElement) {
             // If the tab can be activated by clicking on it:
-            tabElement.click();
+            applyRowColor()
+            setTimeout(() => {
+                tabElement.click();
+            }, 200); // Adjust delay as needed
         } else {
             console.log(`Unable to find tab with ID: ${tabId}`);
         }
@@ -302,6 +473,45 @@ define(['N/currentRecord', 'N/url', '../Library/add_new_data_sl_mapping.js', '..
         }
     };
     
+    function applyRowColor() {
+        jQuery('#custpage_sublist_splits tbody tr').each(function () {
+            var cell = jQuery(this).find('td:eq(17)'); // Status field column
+            var statusInput = cell.find('input.dropdownInput'); // Find NetSuite dropdown field
+            var statusText = "";
+    
+            if (statusInput.length > 0) {
+                statusText = statusInput.val().trim(); // Get the selected value
+            } else {
+                statusText = cell.text().trim(); // If no input field, get text
+            }
+    
+            console.log("Final Row Status:", statusText); // Debugging
+    
+            // Determine row color based on status
+            let color = ""; // Default (no color)
+            if (statusText == 'HOTTT!!!') {
+                color = '#FF69B4'; // Hot Pink
+            } else if (statusText == 'Needs Carrier') {
+                color = '#F4A460'; // Sandy Brown
+            } else if (statusText == 'Covered') {
+                color = '#4682B4'; // Steel Blue
+            } else if (statusText == 'In Transit') {
+                color = '#DC143C'; // Crimson
+            } else if (statusText == 'Waiting For Customer') {
+                color = '#1E90FF'; // Dodger Blue
+            }
+    
+            if (color !== "") {
+                // Apply background color ONLY to `<td>` cells that are NOT hidden
+                jQuery(this).find('td').each(function () {
+                    if (!jQuery(this).is(':hidden')) {
+                        jQuery(this).attr('style', `background-color: ${color} !important; color: white;`);
+                    }
+                });
+            }
+        });
+    }
+
     return {
         pageInit: pageInit,
         fieldChanged: fieldChanged,

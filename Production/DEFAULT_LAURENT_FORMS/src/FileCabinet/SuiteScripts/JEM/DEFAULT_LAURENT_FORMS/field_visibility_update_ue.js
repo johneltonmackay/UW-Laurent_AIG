@@ -33,22 +33,23 @@ define(['N/record', 'N/ui/serverWidget', 'N/runtime', 'N/ui/dialog', 'N/ui/messa
             log.debug('beforeLoad Current User ID', currentUser.id);
 
             if (!intEntity) {
-                isFieldsDisplay(objForm, true)
+                isFieldsDisplay(objForm, true, intEntity)
             } else if (intEntity != NUCOR_LOGISTICS_CENTER && currentUser.id != ISLAURENT){
-                isFieldsDisplay(objForm, false)
+                isFieldsDisplay(objForm, false, intEntity)
             } else {
-                isFieldsDisplay(objForm, true)
+                isFieldsDisplay(objForm, true, intEntity)
             }
         }
 
         // Private Function
 
-        function isFieldsDisplay(objForm, blnValue) {
+        function isFieldsDisplay(objForm, blnValue, intEntity) {
             // log.debug('blnValue', blnValue);
             // List of fields to unhide
+
             let fieldsToShow = [
                 'custbody_saved_locations', 'custbody_locations_public_notes', 'custbody_locations_private_notes',
-                'custbody_saved_locations_2', 'custbody_public_notes_drop', 'custbody_private_notes_drop'
+                'custbody_saved_locations_2', 'custbody_public_notes_drop', 'custbody_private_notes_drop', 'custbody_dsm'
             ];
 
             let arrInLineFields = [

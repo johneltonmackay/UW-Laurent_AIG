@@ -2,12 +2,12 @@
  * @NApiVersion 2.1
  * @NScriptType UserEventScript
  */
-define(['N/record', 'N/search', 'N/runtime', 'N/file', 'N/render'],
+define(['N/record', 'N/search', 'N/runtime', 'N/file', 'N/render', 'N/ui/serverWidget'],
     /**
  * @param{record} record
  * @param{search} search
  */
-    (record, search, runtime, file, render) => {
+    (record, search, runtime, file, render, serverWidget) => {
         const TERMS_NET_30 = 2
         const LO_STATUS_COVERED = 3
         const LO_STATUS_NEEDS_CARRIER = 2
@@ -30,9 +30,15 @@ define(['N/record', 'N/search', 'N/runtime', 'N/file', 'N/render'],
         const SB1_FOLDER_BOL_CREATED_BY_SCRIPT = 123166
 
         const beforeLoad = (scriptContext) => {
+            let objForm = scriptContext.form;
+
             if (scriptContext.type == 'copy' || scriptContext.type == 'create'){
                 let objRecord = scriptContext.newRecord
                 setRateToNull(objRecord)
+            }
+
+            if (scriptContext.type == 'copy' || scriptContext.type == 'create' || scriptContext.type == 'create'){
+                addSavedDriverField(objForm)
             }
         }
 
@@ -104,10 +110,6 @@ define(['N/record', 'N/search', 'N/runtime', 'N/file', 'N/render'],
                         } 
 
                         strLONewOrderStatus = objParam.status
-
-                        // Auto Close Load Order
-
-                        let arrLineToClose = autoCloseLO(objCurrRecord)
                     }
 
                     if (intSOId){
@@ -269,23 +271,50 @@ define(['N/record', 'N/search', 'N/runtime', 'N/file', 'N/render'],
 
         }
 
-        const autoCloseLO = (objRecord) => {
-            let arrLineToClose = []
-            let arrPOIds = []
-            let numLines = objRecord.getLineCount({
-                sublistId: 'item'
-            })
-            for (let x = 0; x < numLines; x++){
-                let intLCLineId = objRecord.getSublistValue({
-                    sublistId: 'item',
-                    fieldId: 'line',
-                    line: x
-                })
-                arrPOIds.push(intLCLineId)
+        const addSavedDriverField = (objForm) => {
+            const customField = objForm.addField({
+                id: 'custpage_driver_instructions',
+                type: serverWidget.FieldType.SELECT,
+                label: 'List of Driver Instructions',
+            });
 
+            objForm.insertField({
+                field : customField,
+                nextfield : 'custbody_driver_instructions'
+            });
+        
+            customField.addSelectOption({
+                value: '',
+                text: 'Select Instruction'
+            });
+        
+            try {
+                const instructionSearch = search.load({
+                    id: 'customsearch_list_of_driver_instructions' 
+                });
+        
+                const searchResult = instructionSearch.run().getRange({
+                    start: 0,
+                    end: 1000 
+                });
+        
+                searchResult.forEach((result) => {
+                    const instructionGroup = result.getValue({
+                        name: 'custbody_driver_instructions',
+                        summary: search.Summary.GROUP
+                    });
+    
+                    customField.addSelectOption({
+                        value: instructionGroup,
+                        text: instructionGroup
+                    });
+                });
+            } catch (error) {
+                log.error('Error Loading Instructions', error);
             }
-            return arrLineToClose
-        }
+        };
+        
+        
 
         return {beforeLoad, beforeSubmit, afterSubmit}
 

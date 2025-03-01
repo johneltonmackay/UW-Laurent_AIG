@@ -14,10 +14,14 @@ define(['N/record', 'N/runtime', 'N/search'],
             log.debug('afterSubmit scriptContext', scriptContext)
             log.debug('afterSubmit executionContext', runtime.executionContext)
 
-            if (runtime.executionContext == runtime.ContextType.USER_INTERFACE){
+            if (runtime.executionContext == runtime.ContextType.USER_INTERFACE || runtime.executionContext == runtime.ContextType.SUITELET){
                 let currentUser = runtime.getCurrentUser();
                 log.debug('Current User ID', currentUser.id);
-                if (currentUser.id == ISLAURENT || currentUser.id == ISJOHN) {
+                if (
+                    currentUser.id == ISLAURENT ||
+                    // currentUser.id == ISJOHN ||
+                    runtime.executionContext == runtime.ContextType.SUITELET
+                ) {
                     try {
                         let newRecord = scriptContext.newRecord
                         let intRecId = newRecord.id
@@ -57,7 +61,7 @@ define(['N/record', 'N/runtime', 'N/search'],
                                 log.debug('afterSubmit objSOData', objSOData)
     
                                 
-                                let intPOId = createPO(objSOData, intRecId, intCustomerId)
+                                let intPOId = createPO(objSOData, intRecId, intCustomerId, runtime.executionContext)
                                 log.debug('afterSubmit intPOId', intPOId)
                                 
                             }
@@ -71,7 +75,7 @@ define(['N/record', 'N/runtime', 'N/search'],
 
         }
 
-        const createPO = (objSOData, intRecId, intCustomerId) => {
+        const createPO = (objSOData, intRecId, intCustomerId, isSuitelet) => {
             let intPOId = null
             const arrFieldsToUpdate = ['rate', 'amount']
             try {
@@ -88,7 +92,8 @@ define(['N/record', 'N/runtime', 'N/search'],
                         'dropship' : 'T',
                         // 'specord' : 'T',
                         'custid' : intCustomerId,
-                        'entity': VENDOR_TO_BE_ASSIGNED
+                        'entity': VENDOR_TO_BE_ASSIGNED,
+                        'customform': 78
                     }
                 });
 
@@ -102,26 +107,27 @@ define(['N/record', 'N/runtime', 'N/search'],
                             });
                         }
                     });
-
-                    let numLines = purchaseOrder.getLineCount({ sublistId: 'item' });
-                    log.debug('createPO numLines', numLines)
-
-                    for (let index = 0; index < numLines; index++) {
-                        purchaseOrder.selectLine({
-                            sublistId: 'item',
-                            line: index
-                        })
-                        arrFieldsToUpdate.forEach(fieldId => {
-                            purchaseOrder.setCurrentSublistValue({
+                    if (isSuitelet !== 'SUITELET'){
+                        let numLines = purchaseOrder.getLineCount({ sublistId: 'item' });
+                        log.debug('createPO numLines', numLines)
+    
+                        for (let index = 0; index < numLines; index++) {
+                            purchaseOrder.selectLine({
                                 sublistId: 'item',
-                                fieldId: fieldId,
-                                line: index,
-                                value: 0
-                            });
-                        })
-                        purchaseOrder.commitLine({
-                            sublistId: 'item',
-                        })
+                                line: index
+                            })
+                            arrFieldsToUpdate.forEach(fieldId => {
+                                purchaseOrder.setCurrentSublistValue({
+                                    sublistId: 'item',
+                                    fieldId: fieldId,
+                                    line: index,
+                                    value: 0
+                                });
+                            })
+                            purchaseOrder.commitLine({
+                                sublistId: 'item',
+                            })
+                        }
                     }
                 }
 
